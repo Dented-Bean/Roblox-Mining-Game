@@ -6,7 +6,8 @@
   - Camera  
   - Terrain  
   - ShopAssets  
-    - Floor  
+    - Floor
+    - Floor2
     - PickaxeShopCam  
     - Wall  
     - Wall  

@@ -1,0 +1,133 @@
+Workspace
+├── Camera
+├── Terrain
+├── ShopAssets
+│   ├── Floor
+│   ├── PickaxeShopCam
+│   ├── Wall
+│   └── Wall
+├── SpawnLocation
+│   └── Decal
+├── ShopNPC
+├── Baseplate
+├── Part
+├── Part
+├── Part
+├── Part
+├── RollButton
+│   ├── ClickDetector
+│   └── RollScript
+├── SellZone
+│   └── SellTrigger
+
+Players
+
+Lighting
+├── Atmosphere
+├── Sky
+├── Bloom
+├── DepthOfField
+├── SunRays
+
+MaterialService
+
+ReplicatedFirst
+
+ReplicatedStorage
+├── OreBlocks
+│   ├── CopperOre
+│   │   └── Block
+│   ├── Dirt
+│   │   └── Block
+│   ├── GoldOre
+│   │   └── Block
+│   └── IronOre
+│       └── Block
+├── OreTotal
+├── GenerateAdjacentBlocks
+├── MineRequest
+├── OreMined
+├── SellInventory
+├── UpdateCollection
+├── BlockTemplate
+│   └── Block
+│       └── ClickDetector
+
+ServerScriptService
+├── BlockGenerator
+├── InitOreTotal
+├── MineHandler
+├── OreTracker
+└── SellHandler
+
+ServerStorage
+
+StarterGui
+├── DialogUI
+│   ├── DialogFrame
+│   │   ├── UICorner
+│   │   ├── DialogOptions
+│   │   │   └── UIListLayout
+│   │   ├── DialogOptionsFrame
+│   │   │   ├── BackpackButton
+│   │   │   ├── GoodbyeButton
+│   │   │   ├── PickaxeButton
+│   │   │   └── TempButton
+│   │   └── DialogLabel
+├── InventoryFullUI
+│   └── PopupFrame
+│       ├── SellButton
+│       └── MessageLabel
+├── OreCollectionUI
+│   ├── BackpackHeader
+│   │   └── BackpackLabel
+│   ├── CoinHeader
+│   │   └── CoinLabel
+│   └── ScrollFrameContainer
+│   │   └── ScrollFrame
+│   │   │   └── UIListLayout
+├── Rollthing
+│   └── ResultLabel
+├── ScreenFaderGui
+│   └── ScreenFader
+├── ShopUI
+│   ├── ConfirmPurchase
+│   │   ├── CancelPurchaseButton
+│   │   ├── ConfirmPurchaseButton
+│   │   └── AreYouSure
+│   └── FullScreenFrame
+│       ├── UIScale
+│       ├── NextPickaxeButton
+│       ├── NextShopButton
+│       ├── ExitShopButton
+│       ├── PurchaseButton
+│       └── PickaxeWorth
+│   ├── Pickaxe1
+
+StarterPack
+└── Pickaxe
+    └── PickaxeHandler
+
+StarterPlayer
+├── StarterCharacterScripts
+└── StarterPlayerScripts
+    ├── CoinUIUpdater
+    ├── CollectionUIUpdater
+    └── LocalScript
+    ├── MiningClient
+    ├── NPCDialogHandler
+    └── ShopUIHandler
+
+Teams
+
+SoundService
+
+TextChatService
+├── ChatWindowConfiguration
+├── ChatInputBarConfiguration
+├── ChannelTabsConfiguration
+└── BubbleChatConfiguration
+    ├── UICorner
+    ├── UIGradient
+    ├── UIPadding
+    ├── ImageLabel

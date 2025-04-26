@@ -5,7 +5,6 @@ local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
--- Wait for PlayerGui
 repeat task.wait() until player:FindFirstChild("PlayerGui")
 
 local dialogUI = player.PlayerGui:WaitForChild("DialogUI")
@@ -29,44 +28,73 @@ local exitButton = fullScreen:WaitForChild("ExitShopButton")
 local confirmFrame = shopUI:WaitForChild("ConfirmPurchase")
 
 local prompt = workspace:WaitForChild("ShopNPC"):WaitForChild("Head"):WaitForChild("ProximityPrompt")
-local cameraFocusPart = workspace.ShopAssets:WaitForChild("CameraFocus")
-local shopCam = workspace.ShopAssets:WaitForChild("PickaxeShopCam")
+local ScreenFaderGui = player.PlayerGui:WaitForChild("ScreenFaderGui")
+local screenFader = ScreenFaderGui:WaitForChild("ScreenFader")
 
-local screenFader = player.PlayerGui:WaitForChild("ScreenFader")
+local cameraFocusPart = workspace:WaitForChild("ShopNPC"):WaitForChild("CameraFocus")
+local pickaxeShopCam = workspace:WaitForChild("ShopAssets"):WaitForChild("PickaxeShopCam")
+local originalCameraCFrame = nil
 
--- Dialog lines
-local dialogLines = {
-	"Hey, welcome to my shop, looking for anything specific?",
-	"Greetings and salutations!"
-}
+-- Fade Function
+local function fadeScreen(targetTransparency, duration)
+	local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+	local tween = TweenService:Create(screenFader, tweenInfo, {BackgroundTransparency = targetTransparency})
+	tween:Play()
+	tween.Completed:Wait()
+end
 
--- Text typing
-local function typeText(text)
+-- NPC Text Typing
+local function typeDialog(text)
 	dialogLabel.Text = ""
 	for i = 1, #text do
 		dialogLabel.Text = string.sub(text, 1, i)
-		task.wait(0.045)
+		task.wait(0.025)
+	end
+	-- 🕓 Add a delay before expanding down
+	task.wait(0.4) -- adjust this number to your liking
+end
+
+-- Button Reveal
+local function revealDialogOptions()
+	dialogOptionsFrame.Visible = true -- ✅ Reveal the button container
+	
+	local orderedButtons = {
+		dialogOptionsFrame:FindFirstChild("PickaxeButton"),
+		dialogOptionsFrame:FindFirstChild("BackpackButton"),
+		dialogOptionsFrame:FindFirstChild("TempButton"),
+		dialogOptionsFrame:FindFirstChild("GoodbyeButton")
+	}
+
+	for i, button in ipairs(orderedButtons) do
+		if button then
+			button.Visible = true
+			button.TextTransparency = 1
+			button.BackgroundTransparency = 1
+			task.delay((i - 1) * 0.2, function()
+				local tween = TweenService:Create(button, TweenInfo.new(0.3), {
+					TextTransparency = 0,
+					BackgroundTransparency = 0
+				})
+				tween:Play()
+			end)
+		end
 	end
 end
 
--- Fade screen helper
-local function fadeScreen(alpha, duration)
-	screenFader.BackgroundTransparency = (alpha == 0 and 1 or 0)
-	screenFader.Visible = true
-
-	local tween = TweenService:Create(screenFader, TweenInfo.new(duration), {
-		BackgroundTransparency = alpha
-	})
-	tween:Play()
-	tween.Completed:Wait()
-	if alpha == 1 then screenFader.Visible = false end
-end
-
--- Dialog animation
-local function playDialogBoxAnimation()
-	dialogFrame.Size = UDim2.new(0, 4, 0.1, 0)
-	dialogFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+-- Animate Dialog Box
+local function animateDialogBox(callback)
+	dialogUI.Enabled = true
 	dialogFrame.Visible = true
+	dialogLabel.Text = "" -- ✨ This clears leftover text
+	dialogFrame.AnchorPoint = Vector2.new(0.5, 0)
+	dialogFrame.Position = UDim2.new(0.5, 0, 0.55, 0)
+	dialogFrame.Size = UDim2.new(0, 4, 0, 4)
+
+	for _, btn in pairs(dialogOptionsFrame:GetChildren()) do
+		if btn:IsA("TextButton") then
+			btn.Visible = false
+		end
+	end
 
 	local step1 = TweenService:Create(dialogFrame, TweenInfo.new(0.6), {Size = UDim2.new(0, 4, 0.1, 0)})
 	local step2 = TweenService:Create(dialogFrame, TweenInfo.new(0.6), {Size = UDim2.new(0.45, 0, 0.1, 0)})
@@ -76,53 +104,51 @@ local function playDialogBoxAnimation()
 	step1.Completed:Wait()
 	step2:Play()
 	step2.Completed:Wait()
+	callback()
+	step3:Play()
+	step3.Completed:Wait()
+	revealDialogOptions()
 end
 
--- Fade in buttons one by one in order
-local function revealDialogOptions()
-	dialogOptionsFrame.Visible = true
-	local buttonOrder = {
-		pickaxeButton,
-		backpackButton,
-		tempButton,
-		goodbyeButton
-	}
-	for _, button in ipairs(buttonOrder) do
-		button.Visible = true
-		button.TextTransparency = 1
-		button.BackgroundTransparency = 1
-
-		TweenService:Create(button, TweenInfo.new(0.2), {TextTransparency = 0}):Play()
-		TweenService:Create(button, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
-		task.wait(0.2)
-	end
-end
-
--- Player pressed E
+-- Prompt Trigger
 prompt.Triggered:Connect(function()
 	prompt.Enabled = false
-
+	-- Lock the camera to allow manipulation
 	camera.CameraType = Enum.CameraType.Scriptable
-	local tween = TweenService:Create(camera, TweenInfo.new(0.6, Enum.EasingStyle.Sine), {
-		CFrame = CFrame.new(cameraFocusPart.Position, cameraFocusPart.Position + cameraFocusPart.CFrame.LookVector)
-	})
-	tween:Play()
-	tween.Completed:Wait()
 
-	dialogUI.Enabled = true
-	playDialogBoxAnimation()
-	typeText(dialogLines[math.random(1, #dialogLines)])
-	revealDialogOptions()
+	-- Get current camera position (player view, whether in 1st or 3rd person)
+	local startCFrame = camera.CFrame
+
+	-- Set target CFrame (in front of the NPC's face)
+	local targetPosition = cameraFocusPart.Position
+	local targetLookAt = targetPosition + cameraFocusPart.CFrame.LookVector
+	local endCFrame = CFrame.new(targetPosition, targetLookAt)
+
+	-- Tween from the player’s current view to the NPC’s face
+	originalCameraCFrame = camera.CFrame
+	camera.CFrame = startCFrame
+	local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+	local camTween = TweenService:Create(camera, tweenInfo, { CFrame = endCFrame })
+	camTween:Play()
+
+	local randomLine = "Greetings and salutations!" -- Fixed text for now
+	animateDialogBox(function()
+		typeDialog(randomLine)
+	end)
+
+	print("Proximity prompt triggered")
 end)
 
--- Pickaxes button
+-- Pickaxe Button Logic
 pickaxeButton.MouseButton1Click:Connect(function()
+	print("🔁 Pickaxe Shop transition started")
 	dialogUI.Enabled = false
+
 	fadeScreen(0, 0.75)
 	task.wait(0.75)
 
 	camera.CameraType = Enum.CameraType.Scriptable
-	camera.CFrame = shopCam.CFrame
+	camera.CFrame = pickaxeShopCam.CFrame
 
 	fadeScreen(1, 0.75)
 	task.wait(0.5)
@@ -136,38 +162,39 @@ pickaxeButton.MouseButton1Click:Connect(function()
 	nextPickaxe.Visible = true
 	confirmFrame.Visible = false
 
-	print("✅ Pickaxe Shop UI opened")
+	print("✅ Pickaxe Shop UI opened with camera transition")
 end)
 
--- Backpacks button
 backpackButton.MouseButton1Click:Connect(function()
 	print("Open Backpack Shop (coming soon)")
 end)
 
--- Temp button
-tempButton.MouseButton1Click:Connect(function()
-	print("Temp button clicked (does nothing yet)")
-end)
-
--- Goodbye button
 goodbyeButton.MouseButton1Click:Connect(function()
-	dialogUI.Enabled = false
-	dialogFrame.Visible = false
-	dialogOptionsFrame.Visible = false
-	for _, b in pairs(dialogOptionsFrame:GetChildren()) do
-		if b:IsA("TextButton") then
-			b.Visible = false
-		end
-	end
+	print("👋 Player clicked Nevermind")
 
+	-- Fade to black
 	fadeScreen(0, 0.75)
 	task.wait(0.75)
 
-	camera.CameraType = Enum.CameraType.Custom
-	camera.CameraSubject = player.Character:WaitForChild("Humanoid")
+	-- Return the camera
+	if originalCameraCFrame then
+		camera.CameraType = Enum.CameraType.Scriptable
+		camera.CFrame = originalCameraCFrame
+	end
 
+	-- Fade back in
 	fadeScreen(1, 0.75)
-	task.wait(0.5)
 
+	-- Re-enable default camera
+	task.wait(0.5)
+	camera.CameraType = Enum.CameraType.Custom
+
+	-- Hide UI
+	dialogUI.Enabled = false
 	prompt.Enabled = true
+end)
+
+
+tempButton.MouseButton1Click:Connect(function()
+	print("Temp button clicked (does nothing yet)")
 end)
